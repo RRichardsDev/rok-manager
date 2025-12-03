@@ -1,25 +1,32 @@
 import { prisma } from "@/lib/db";
+
+export const dynamic = 'force-dynamic';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Users, Shield, Calendar, Trophy, Swords, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 async function getStats() {
-  const [totalPlayers, alliancePlayers, totalEvents, activeEvents] = await Promise.all([
-    prisma.player.count(),
-    prisma.player.count({ where: { inAlliance: true } }),
-    prisma.event.count(),
-    prisma.event.count({ where: { status: "ACTIVE" } }),
-  ]);
+  try {
+    const [totalPlayers, alliancePlayers, totalEvents, activeEvents] = await Promise.all([
+      prisma.player.count(),
+      prisma.player.count({ where: { inAlliance: true } }),
+      prisma.event.count(),
+      prisma.event.count({ where: { status: "ACTIVE" } }),
+    ]);
 
-  const recentEvents = await prisma.event.findMany({
-    take: 5,
-    orderBy: { startDate: "desc" },
-    include: {
-      participations: true,
-    },
-  });
+    const recentEvents = await prisma.event.findMany({
+      take: 5,
+      orderBy: { startDate: "desc" },
+      include: {
+        participations: true,
+      },
+    });
 
-  return { totalPlayers, alliancePlayers, totalEvents, activeEvents, recentEvents };
+    return { totalPlayers, alliancePlayers, totalEvents, activeEvents, recentEvents };
+  } catch {
+    // Database not initialized yet
+    return { totalPlayers: 0, alliancePlayers: 0, totalEvents: 0, activeEvents: 0, recentEvents: [] };
+  }
 }
 
 export default async function Dashboard() {
