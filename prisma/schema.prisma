@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  playerId    String   @unique // In-game player ID
+  name        String
+  power       BigInt   @default(0)
+  killPoints  BigInt   @default(0)
+  inAlliance  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  participations EventParticipation[]
+  equipmentSets  EquipmentSet[]
+}
+
+model EquipmentSet {
+  id             String   @id @default(cuid())
+  playerId       String
+  setNumber      Int      // 1-7
+  name           String?  // Optional name for the set (e.g., "Infantry", "Cavalry")
+
+  // Gear slots
+  helmet         String?  // Gear name/id
+  chest          String?
+  weapon         String?
+  gloves         String?
+  legs           String?
+  boots          String?
+  accessory1     String?
+  accessory2     String?
+
+  // Gear enhancements (JSON stored as string)
+  // Format: { "helmet": { "crit": true, "attunement": 3 }, ... }
+  enhancements   String?  @default("{}")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, setNumber])
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  name        String
+  type        String    // ARK_OF_OSIRIS, KVK, MGE, CEROLI_CRISIS, IANS_BALLADS, SUNSET_CANYON, LOST_KINGDOM
+  maxPlayers  Int?
+  startDate   DateTime
+  endDate     DateTime?
+  status      String    @default("UPCOMING") // UPCOMING, ACTIVE, COMPLETED
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  participations EventParticipation[]
+}
+
+model EventParticipation {
+  id            String   @id @default(cuid())
+  playerId      String
+  eventId       String
+  position      Int      @default(0)
+  participated  Boolean  @default(false)
+  score         Int?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, eventId])
+}
